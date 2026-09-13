@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Office Supplies & Business Communication Assessment</title>
+    <style>
+        :root {
+            --primary: #1E293B;
+            --accent: #0284C7;
+            --success: #15803D;
+            --error: #B91C1C;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --border: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            min-height: 75px;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.selected {
+            border-color: var(--accent);
+            background-color: #F0F9FF;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .card.matched {
+            border-color: var(--border);
+            background-color: #F1F5F9;
+            opacity: 0.35;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .card .text {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .card.term .text {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Business Assessment Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .modal h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0F172A;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Office Supplies & Business Communication Assessment</h1>
+        <p>Match each workstation setup rule, communication principle, or channel method on the left with its definition on the right.</p>
+    </div>
+
+    <div class="game-container">
+        <div class="column" id="terms-column"></div>
+        <div class="column" id="defs-column"></div>
+    </div>
+
+    <!-- Assessment Completed Modal -->
+    <div class="overlay" id="reward-modal">
+        <div class="modal">
+            <h2>Session Completed</h2>
+            <p>You have successfully verified proficiency in these 6 workstation and business communication concepts.</p>
+            <button class="btn" onclick="initGame()">Start Next Session 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // 60 Professional Knowledge Items extracted & expanded from Section 9 & 10
+        const database = [
+            { id: 1, term: 'Ergonomic Desk Chair', def: 'Promotes good back posture and adjustable support to reduce physical fatigue during office hours.' },
+            { id: 2, term: 'Workplace Lighting Standard', def: 'Sufficient illumination designed to prevent eyestrain and headaches while minimizing screen glare.' },
+            { id: 3, term: 'Reach Zone Placement', def: 'Keeping high-frequency supplies like the telephone, stapler, and memo pad within immediate arm reach.' },
+            { id: 4, term: 'Weekly Supply Restocking', def: 'Maintaining a one-week supply of desk essentials and replenishing them neatly at the start of each week.' },
+            { id: 5, term: 'Upside-Down Ink Pad Storage', def: 'Storage rule to keep ink pads upside down to preserve ink distribution and prevent drying.' },
+            { id: 6, term: 'Power Cord Safety', def: 'Keeping electrical cables clear of foot areas to avoid accidental disconnection of workstation devices.' },
+            { id: 7, term: 'Equipment Dust Covers', def: 'Plastic protective covers used on computers and keyboards when idle to prevent dust accumulation.' },
+            { id: 8, term: 'Bulk Purchasing Cost Control', def: 'Procuring office supplies in volume to secure bulk discounts and reduce operational expenditures.' },
+            { id: 9, term: 'Simplified Communication Model', def: 'A framework consisting of Sender, Encoding, Medium, Receiver, Decoding, and Feedback components.' },
+            { id: 10, term: 'One-Way Communication', def: 'A message transfer method where the receiver lacks opportunity for clarification, risking misunderstanding.' },
+            { id: 11, term: 'Two-Way Communication', def: 'An effective process allowing receivers to clarify understanding via feedback before taking action.' },
+            { id: 12, term: 'Message Encoding Strategy', def: 'Selecting clear, precise, jargon-free language tailored to the receiver\'s position and culture.' },
+            { id: 13, term: 'Message Decoding Process', def: 'Interpreting the original message accurately, often verified by repeating facts in one\'s own words.' },
+            { id: 14, term: 'Technical Communication Noise', def: 'Signal disruption caused by poor mobile reception, faulty telephone lines, or unstable networks.' },
+            { id: 15, term: 'Physical Communication Noise', def: 'Environmental acoustic interference resulting from poor room acoustics or uninsulated office walls.' },
+            { id: 16, term: 'Information Overload Barrier', def: 'Excessive detail that obscures core messages and hinders proper digestion of key facts.' },
+            { id: 17, term: 'Need to Know Basis', def: 'Restricting sensitive business communications only to authorized recipients holding relevant positions.' },
+            { id: 18, term: 'Corporate Communications Dept', def: 'Dedicated department handling media inquiries, public relations, and official external image.' },
+            { id: 19, term: 'Investor Relations Department', def: 'Specialized corporate team managing transparent communication and feedback with shareholders.' },
+            { id: 20, term: 'Telephone Follow-Up Rule', def: 'Recapping important verbal call conclusions via a follow-up memo or email to all involved parties.' },
+            { id: 21, term: 'Heat-Sensitive Fax Paper Issue', def: 'Fading print quality over time requiring photocopies for long-term document archiving.' },
+            { id: 22, term: 'Voice Mail Channel Limit', def: 'A non-time-sensitive, one-way audio messaging tool suitable only for simple updates.' },
+            { id: 23, term: 'Video Conference Benefit', def: 'Enabling real-time, visual multi-location collaboration while eliminating travel expenditures.' },
+            { id: 24, term: 'Zoom Video Conferencing', def: 'Cross-platform app supporting 100 small-team participants up to 1,000 enterprise members.' },
+            { id: 25, term: 'TeamViewer Collaboration', def: 'Remote desktop utility featuring "My Meeting" management for up to 25 meeting participants.' },
+            { id: 26, term: 'Google Hangout / Meet', def: 'Cloud-integrated video tool linking with Google Docs for real-time co-editing up to 10 video streams.' },
+            { id: 27, term: 'Internal Memorandum (Memo)', def: 'Brief internal paper or digital message for simple, non-sensitive, routine correspondence.' },
+            { id: 28, term: 'Internal Circular', def: 'Formal internal notice announcing company policies, product launches, or policy updates.' },
+            { id: 29, term: 'Executive Summary Function', def: 'Brief opening section of a formal report detailing background, purpose, and recommendations.' },
+            { id: 30, term: 'In-house Newsletter', def: 'Internal publication keeping staff informed on achievements, joiners, and corporate activities.' },
+            { id: 31, term: 'Electronic Bulletin Board', def: 'Intranet platform functioning like a physical board to post handbooks, manuals, and updates.' },
+            { id: 32, term: 'Corporate & Product Brochures', def: 'Print or digital promotional booklets detailing organizational scale, services, or new products.' },
+            { id: 33, term: 'Mass Communication Slogan', def: 'A concise, memorable slogan used in TV or print ads to convey clear messages to the public.' },
+            { id: 34, term: 'TV Media Measurement', def: 'Evaluating broadcast ad impact using viewer ratings during specific golden time periods.' },
+            { id: 35, term: 'Regulatory Communication Care', def: 'Thoroughly proofreading annual reports to avoid legal liabilities and uphold corporate credibility.' },
+            { id: 36, term: 'Channel Selection: Reach', def: 'Matching internal email/intranet vs. public TV/newspapers to the target audience scope.' },
+            { id: 37, term: 'Channel Selection: Formality', def: 'Choosing documented minutes or official notices to fulfill strict legal or regulatory mandates.' },
+            { id: 38, term: 'Channel Selection: Sensitivity', def: 'Avoiding open fax machines or public memos when handling confidential employee records.' },
+            { id: 39, term: 'Channel Selection: Urgency', def: 'Opting for face-to-face meetings or phone calls when instant clarification is necessary.' },
+            { id: 40, term: 'SMS Business Communication', def: 'Delivering direct product alerts or bank notices, requiring prior customer consent for carrier charges.' },
+            { id: 41, term: 'Desk Organizer Slots', def: 'Stationery accessory used to store work-in-progress folders for rapid visual access.' },
+            { id: 42, term: 'Computer Cooling Fan', def: 'Hardware accessory preventing system overheating during prolonged administrative tasks.' },
+            { id: 43, term: 'Stationery Cost Control', def: 'Implementing scientific inventory control and shared equipment usage to lower expenses.' },
+            { id: 44, term: 'Social Media Communication', def: 'Utilizing modern channels like Facebook or X for interactive customer outreach.' },
+            { id: 45, term: 'Legal Department Role', def: 'Handling regulatory compliance and official communications with government authorities.' },
+            { id: 46, term: 'Formal Customer Letters', def: 'Structured correspondence including Thank You, Complaint, Apology, and Invitation letters.' },
+            { id: 47, term: 'Print Media Readership', def: 'Measuring newspaper and magazine effectiveness through circulation metrics and target demographics.' },
+            { id: 48, term: 'Visual Communication Advantage', def: 'Deepening understanding and retention by allowing participants to observe facial expressions.' },
+            { id: 49, term: 'Search Engine Marketing', def: 'Placing targeted digital advertisements on major portals like Google, Yahoo, or Baidu.' },
+            { id: 50, term: 'Jargon Avoidance Rule', def: 'Eliminating technical buzzwords during message encoding to prevent receiver confusion.' },
+            { id: 51, term: 'Receiver Bias Barrier', def: 'Personal prejudice causing receivers to selectively filter or misinterpret incoming messages.' },
+            { id: 52, term: 'Time Constraint Barrier', def: 'Rushing through communications due to upcoming deadlines, leading to incomplete understanding.' },
+            { id: 53, term: 'Communication Medium Flexibility', def: 'Selecting between face-to-face, written, audio, or visual channels based on context.' },
+            { id: 54, term: 'Annual General Meeting (AGM)', def: 'Mandatory corporate forum where directors communicate performance and governance to investors.' },
+            { id: 55, term: 'Intranet Restricted Access', def: 'A private computer network restricted exclusively to authorized internal staff members.' },
+            { id: 56, term: 'Fax Security Risk', def: 'Leaving unattended sensitive documents on shared office fax tray areas.' },
+            { id: 57, term: 'Mouse Pad Quality', def: 'Ergonomic accessory ensuring accurate mouse tracking and comfortable wrist positioning.' },
+            { id: 58, term: 'Non-Verbal Expression Observation', def: 'Gauging body language and posture during face-to-face discussions to verify understanding.' },
+            { id: 59, term: 'Cost-Effectiveness Evaluation', def: 'Comparing media channel costs (e.g., TV vs. Radio) against expected reach and impact.' },
+            { id: 60, term: 'Harmonious Organizational Culture', def: 'Fostering clear internal communication to coordinate cross-departmental operations smoothly.' }
+        ];
+
+        let selectedTerm = null;
+        let selectedDef = null;
+        let currentPairs = [];
+        let matchedCount = 0;
+        const ITEMS_PER_SESSION = 6;
+
+        // Text-to-Speech (Professional US English)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize Assessment Session
+        function initGame() {
+            matchedCount = 0;
+            selectedTerm = null;
+            selectedDef = null;
+            document.getElementById('reward-modal').style.display = 'none';
+
+            // Randomly extract 6 items from the 60-item database
+            const shuffledDb = [...database].sort(() => 0.5 - Math.random());
+            currentPairs = shuffledDb.slice(0, ITEMS_PER_SESSION);
+
+            // Render Terms (Left Column)
+            const termsCol = document.getElementById('terms-column');
+            termsCol.innerHTML = '';
+            currentPairs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card term';
+                card.dataset.type = 'term';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.term);
+                card.innerHTML = `<div class="text">${item.term}</div>`;
+                termsCol.appendChild(card);
+            });
+
+            // Render Definitions (Right Column, Shuffled)
+            const defsCol = document.getElementById('defs-column');
+            defsCol.innerHTML = '';
+            const shuffledDefs = [...currentPairs].sort(() => 0.5 - Math.random());
+            shuffledDefs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.type = 'def';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.def);
+                card.innerHTML = `<div class="text">${item.def}</div>`;
+                defsCol.appendChild(card);
+            });
+
+            speak('New session loaded. Match each workstation rule or communication principle with its definition.');
+        }
+
+        // Card Selection Handler
+        function selectCard(card, soundText) {
+            if (card.classList.contains('matched')) return;
+
+            speak(soundText);
+            const type = card.dataset.type;
+
+            if (type === 'term') {
+                if (selectedTerm) selectedTerm.classList.remove('selected');
+                selectedTerm = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedDef) selectedDef.classList.remove('selected');
+                selectedDef = card;
+                card.classList.add('selected');
+            }
+
+            if (selectedTerm && selectedDef) {
+                checkMatch();
+            }
+        }
+
+        // Match Verification
+        function checkMatch() {
+            const termId = selectedTerm.dataset.id;
+            const defId = selectedDef.dataset.id;
+
+            if (termId === defId) {
+                const t = selectedTerm;
+                const d = selectedDef;
+
+                setTimeout(() => {
+                    t.classList.remove('selected');
+                    d.classList.remove('selected');
+                    t.classList.add('matched');
+                    d.classList.add('matched');
+
+                    speak('Correct.');
+                    matchedCount++;
+
+                    if (matchedCount === ITEMS_PER_SESSION) {
+                        setTimeout(showReward, 800);
+                    }
+                }, 250);
+
+                selectedTerm = null;
+                selectedDef = null;
+            } else {
+                setTimeout(() => {
+                    speak('Incorrect match. Please try again.');
+                    selectedTerm.classList.remove('selected');
+                    selectedDef.classList.remove('selected');
+                    selectedTerm = null;
+                    selectedDef = null;
+                }, 500);
+            }
+        }
+
+        // Display Session Completion Modal
+        function showReward() {
+            document.getElementById('reward-modal').style.display = 'flex';
+            speak('Assessment completed successfully.');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>

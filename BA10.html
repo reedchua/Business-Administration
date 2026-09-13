@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Office Space & Layout Management Assessment</title>
+    <style>
+        :root {
+            --primary: #1E293B;
+            --accent: #0284C7;
+            --success: #15803D;
+            --error: #B91C1C;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --border: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            min-height: 75px;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.selected {
+            border-color: var(--accent);
+            background-color: #F0F9FF;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .card.matched {
+            border-color: var(--border);
+            background-color: #F1F5F9;
+            opacity: 0.35;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .card .text {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .card.term .text {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Business Assessment Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .modal h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0F172A;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Office Space & Layout Management Assessment</h1>
+        <p>Match each layout objective, safety rule, infection control policy, or employee wellness principle on the left with its definition on the right.</p>
+    </div>
+
+    <div class="game-container">
+        <div class="column" id="terms-column"></div>
+        <div class="column" id="defs-column"></div>
+    </div>
+
+    <!-- Assessment Completed Modal -->
+    <div class="overlay" id="reward-modal">
+        <div class="modal">
+            <h2>Session Completed</h2>
+            <p>You have successfully verified proficiency in these 6 office layout and space management concepts.</p>
+            <button class="btn" onclick="initGame()">Start Next Session 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // 60 Professional Knowledge Items extracted & expanded from Chapter 12
+        const database = [
+            { id: 1, term: 'Definition of Office Layout', def: 'Arrangement of departments, equipment, and personnel within a floor space for optimum utilization and maximum efficiency.' },
+            { id: 2, term: 'Open Office Plan Standard', def: 'Accommodating majority of staff in a shared spatial area while reserving private rooms for top executives.' },
+            { id: 3, term: 'Primary Layout Objective', def: 'Utilizing available floor space to the greatest extent while ensuring power and phone services are accessible.' },
+            { id: 4, term: 'Executive Status Prestige', def: 'Providing private office rooms for senior officials as a matter of organizational rank and executive status.' },
+            { id: 5, term: 'Executive Confidential Work', def: 'Allocating enclosed private offices to allow senior management to conduct sensitive discussions or reviews.' },
+            { id: 6, term: 'Infection Control Divider', def: 'Installing clear plastic partitions between desks to maintain physical distance and reduce virus transmission.' },
+            { id: 7, term: 'Meeting Occupancy Limit', def: 'Restricting maximum personnel count in offices and conference rooms to prevent overcrowding.' },
+            { id: 8, term: 'Face-to-Face Contact Policy', def: 'Managing seating arrangements and limiting physical interactions like handshakes during health outbreaks.' },
+            { id: 9, term: 'Reception Area Placement', def: 'Positioning an attractive, decorated reception area near the main entrance to greet visitors professionally.' },
+            { id: 10, term: 'Conference Room Purpose', def: 'Providing dedicated space for business executives to host meetings, group discussions, and candidate interviews.' },
+            { id: 11, term: 'Emergency Exit Unblocking', def: 'Ensuring passages and exits remain completely free of obstruction to facilitate safe evacuation.' },
+            { id: 12, term: 'Office Hazard Elimination', def: 'Removing obsolete machinery, closing open drawers, and fencing exposed moving parts to prevent accidents.' },
+            { id: 13, term: 'Convenient Central Amenities', def: 'Locating washrooms, rest rooms, drinking water, and canteens at central points easily reached by all staff.' },
+            { id: 14, term: 'Layout Flexibility & Expansion', def: 'Designing workspace layouts capable of easy adjustment and expansion as operational needs grow.' },
+            { id: 15, term: 'Re-Layout Trigger: Staff Changes', def: 'Reviewing layout arrangements when there is a significant increase or decrease in total personnel headcount.' },
+            { id: 16, term: 'Re-Layout Trigger: Transit Loss', def: 'Re-evaluating spatial layout when documents or work items repeatedly get lost during internal transit.' },
+            { id: 17, term: 'Re-Layout Trigger: Work Bottlenecks', def: 'Adjusting workstation positions when work piles up at one desk while downstream staff wait idle.' },
+            { id: 18, term: 'Re-Layout Trigger: Environment Complaints', def: 'Modifying layout in response to employee complaints regarding poor lighting, ventilation, or overcrowding.' },
+            { id: 19, term: 'Layout Checklist: Light Positioning', def: 'Ensuring staff seating orientation prevents workers from facing directly into harsh natural or artificial light.' },
+            { id: 20, term: 'Layout Checklist: Cabinet Proximity', def: 'Placing filing cabinets immediately adjacent to the administrative staff members who use them most frequently.' },
+            { id: 21, term: 'Layout Checklist: Supervisor Positioning', def: 'Positioning supervisory desks at strategic vantage points to maintain oversight of routine operations.' },
+            { id: 22, term: 'Layout Checklist: Non-Slip Flooring', def: 'Installing non-slippery floor coverings and stair treads to prevent accidental slips and workplace falls.' },
+            { id: 23, term: 'Layout Advantage: Cost Reduction', def: 'Making the most economic use of floor space to reduce total rental overhead and utility expenditures.' },
+            { id: 24, term: 'Layout Advantage: Effective Supervision', def: 'Designing clear line-of-sight layouts that minimize required supervisory effort and supervision costs.' },
+            { id: 25, term: 'Layout Advantage: Shortest Workflow Route', def: 'Placing sequential work activities along the shortest physical route to speed up internal communication.' },
+            { id: 26, term: 'Layout Advantage: HVAC Cost Savings', def: 'Optimizing spatial planning to lower installation and running costs for cooling, heating, and air conditioning.' },
+            { id: 27, term: 'Layout Advantage: Staff Fatigue Reduction', def: 'Designing comfortable, ergonomic layouts that reduce physical tension and boost overall employee morale.' },
+            { id: 28, term: 'Layout Advantage: Corporate Image', def: 'Projecting a clean, well-planned spatial appearance to external visitors to enhance corporate reputation.' },
+            { id: 29, term: 'Mental Health Attraction Policy', def: 'Offering physical and mental health support programs as a competitive talent attraction and retention strategy.' },
+            { id: 30, term: 'Equal Workplace Respect', def: 'Creating a non-discriminatory environment promoting trust regardless of gender, race, disability, or religion.' },
+            { id: 31, term: 'Cut-Resistant Catering Gloves', def: 'Providing specialized protective gloves to catering personnel to prevent cut injuries during food preparation.' },
+            { id: 32, term: 'Transport Trolleys Safety', def: 'Utilizing rolling carts and trolleys in stores to enable safe, easy movement of heavy physical objects.' },
+            { id: 33, term: 'Work-Life Balance Activities', def: 'Organizing yoga, dance classes, and providing entertainment coupons to promote holistic employee health.' },
+            { id: 34, term: 'Culture of Care Core Spirit', def: 'Encouraging community service involvement to foster an organizational culture centered on empathy and care.' },
+            { id: 35, term: 'Noise Segregation Principle', def: 'Isolating loud machinery and noisy administrative operations away from quiet concentration zones.' },
+            { id: 36, term: 'Mutual Interference Avoidance', def: 'Spacing desks and walkways properly to prevent staff movements from disturbing neighboring workers.' },
+            { id: 37, term: 'Window & Column Placement Factor', def: 'Accounting for structural columns, windows, and doors when designing the layout of office furniture.' },
+            { id: 38, term: 'Storage Space Allocation Factor', def: 'Reserving dedicated square footage for stationery, archived files, and bulky operational equipment.' },
+            { id: 39, term: 'Executive Visitor Meeting Need', def: 'Providing enclosed executive offices to host external guests without disturbing general staff.' },
+            { id: 40, term: 'Executive Concentration Need', def: 'Providing private quiet space for senior officials to focus on high-level strategic planning.' },
+            { id: 41, term: 'Social Distance Desk Spacing', def: 'Increasing physical distance between desks and chairs in open spaces to meet health standards.' },
+            { id: 42, term: 'Partition Screen Usage', def: 'Utilizing semi-private partitions in open layouts to balance openness with visual privacy.' },
+            { id: 43, term: 'Passage Clearance Rule', def: 'Keeping main corridors and walkways completely unblocked by boxes or temporary furniture.' },
+            { id: 44, term: 'Moving Machine Guards', def: 'Installing protective fencing or safety guards around exposed moving components of office devices.' },
+            { id: 45, term: 'Re-Layout Trigger: Process Change', def: 'Redesigning workspace layouts when new operational procedures alter the natural flow of work.' },
+            { id: 46, term: 'Re-Layout Trigger: Organizational Shift', def: 'Reconfiguring office spaces following corporate restructuring, mergers, or responsibility changes.' },
+            { id: 47, term: 'Re-Layout Trigger: Equipment Replacement', def: 'Updating spatial arrangements when purchasing new bulky office equipment or replacing old machinery.' },
+            { id: 48, term: 'Layout Checklist: Overcrowding Avoidance', def: 'Maintaining adequate square footage per worker to ensure breathing room and comfortable movement.' },
+            { id: 49, term: 'Layout Checklist: Easy Daily Cleaning', def: 'Arranging furniture neatly to allow janitorial staff to sweep and sanitize surfaces effortlessly.' },
+            { id: 50, term: 'Joint Machinery Utilization', def: 'Sharing high-capacity office copiers and printers centrally to reduce capital investment on hardware.' },
+            { id: 51, term: 'Sense of Belonging Fosterage', def: 'Designing group seating clusters to build team camaraderie and a sense of shared organizational loyalty.' },
+            { id: 52, term: 'Re-Layout Trigger: Lease Constraints', def: 'Adjusting floor plans due to lease renewals, space downsizing, or building landlord requirements.' },
+            { id: 53, term: 'Occupational Health Policy', def: 'Establishing mandatory guidelines to safeguard employees against physical injuries in daily duties.' },
+            { id: 54, term: 'Fair Workplace Education', def: 'Educating staff on internal guidelines to eliminate discrimination and foster mutual respect.' },
+            { id: 55, term: 'Community Activity Encouragement', def: 'Supporting staff participation in volunteer programs to assist those in need and build community goodwill.' },
+            { id: 56, term: 'Centralized Water Coolers', def: 'Placing drinking water stations at accessible central points to promote hydration without long transit.' },
+            { id: 57, term: 'Optimum Space Utilization', def: 'Eliminating wasted dead space by carefully aligning work desks, aisles, and storage units.' },
+            { id: 58, term: 'Hong Kong Work Pressure Care', def: 'Recognizing local workplace stress and offering corporate wellness initiatives to support mental health.' },
+            { id: 59, term: 'Rest Room Facilities Provision', def: 'Providing dedicated break areas for staff to relax during non-work hours to reduce stress.' },
+            { id: 60, term: 'Sequential Workflow Arrangement', def: 'Placing interdependent staff desks next to each other so physical files pass directly without back-tracking.' }
+        ];
+
+        let selectedTerm = null;
+        let selectedDef = null;
+        let currentPairs = [];
+        let matchedCount = 0;
+        const ITEMS_PER_SESSION = 6;
+
+        // Text-to-Speech (Professional US English)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize Assessment Session
+        function initGame() {
+            matchedCount = 0;
+            selectedTerm = null;
+            selectedDef = null;
+            document.getElementById('reward-modal').style.display = 'none';
+
+            // Randomly extract 6 items from the 60-item database
+            const shuffledDb = [...database].sort(() => 0.5 - Math.random());
+            currentPairs = shuffledDb.slice(0, ITEMS_PER_SESSION);
+
+            // Render Terms (Left Column)
+            const termsCol = document.getElementById('terms-column');
+            termsCol.innerHTML = '';
+            currentPairs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card term';
+                card.dataset.type = 'term';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.term);
+                card.innerHTML = `<div class="text">${item.term}</div>`;
+                termsCol.appendChild(card);
+            });
+
+            // Render Definitions (Right Column, Shuffled)
+            const defsCol = document.getElementById('defs-column');
+            defsCol.innerHTML = '';
+            const shuffledDefs = [...currentPairs].sort(() => 0.5 - Math.random());
+            shuffledDefs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.type = 'def';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.def);
+                card.innerHTML = `<div class="text">${item.def}</div>`;
+                defsCol.appendChild(card);
+            });
+
+            speak('New session loaded. Match each office layout concept or wellness policy with its definition.');
+        }
+
+        // Card Selection Handler
+        function selectCard(card, soundText) {
+            if (card.classList.contains('matched')) return;
+
+            speak(soundText);
+            const type = card.dataset.type;
+
+            if (type === 'term') {
+                if (selectedTerm) selectedTerm.classList.remove('selected');
+                selectedTerm = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedDef) selectedDef.classList.remove('selected');
+                selectedDef = card;
+                card.classList.add('selected');
+            }
+
+            if (selectedTerm && selectedDef) {
+                checkMatch();
+            }
+        }
+
+        // Match Verification
+        function checkMatch() {
+            const termId = selectedTerm.dataset.id;
+            const defId = selectedDef.dataset.id;
+
+            if (termId === defId) {
+                const t = selectedTerm;
+                const d = selectedDef;
+
+                setTimeout(() => {
+                    t.classList.remove('selected');
+                    d.classList.remove('selected');
+                    t.classList.add('matched');
+                    d.classList.add('matched');
+
+                    speak('Correct.');
+                    matchedCount++;
+
+                    if (matchedCount === ITEMS_PER_SESSION) {
+                        setTimeout(showReward, 800);
+                    }
+                }, 250);
+
+                selectedTerm = null;
+                selectedDef = null;
+            } else {
+                setTimeout(() => {
+                    speak('Incorrect match. Please try again.');
+                    selectedTerm.classList.remove('selected');
+                    selectedDef.classList.remove('selected');
+                    selectedTerm = null;
+                    selectedDef = null;
+                }, 500);
+            }
+        }
+
+        // Display Session Completion Modal
+        function showReward() {
+            document.getElementById('reward-modal').style.display = 'flex';
+            speak('Assessment completed successfully.');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>

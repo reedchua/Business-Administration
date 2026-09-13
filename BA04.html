@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation & Record Management Assessment</title>
+    <style>
+        :root {
+            --primary: #1E293B;
+            --accent: #0284C7;
+            --success: #15803D;
+            --error: #B91C1C;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --border: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            min-height: 75px;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.selected {
+            border-color: var(--accent);
+            background-color: #F0F9FF;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .card.matched {
+            border-color: var(--border);
+            background-color: #F1F5F9;
+            opacity: 0.35;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .card .text {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .card.term .text {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Business Assessment Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .modal h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0F172A;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Documentation & Record Management Assessment</h1>
+        <p>Match each filing or record management concept on the left with its corresponding definition or rule on the right.</p>
+    </div>
+
+    <div class="game-container">
+        <div class="column" id="terms-column"></div>
+        <div class="column" id="defs-column"></div>
+    </div>
+
+    <!-- Assessment Completed Modal -->
+    <div class="overlay" id="reward-modal">
+        <div class="modal">
+            <h2>Session Completed</h2>
+            <p>You have successfully verified proficiency in these 6 documentation and filing concepts.</p>
+            <button class="btn" onclick="initGame()">Start Next Session 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // 60 Professional Knowledge Items extracted & expanded from Section 5
+        const database = [
+            { id: 1, term: 'Direct Access System', def: 'Filing systems like alphabetical, subject, or geographical classification where records can be located directly.' },
+            { id: 2, term: 'Indirect Access System', def: 'Numerical filing systems requiring a code index to locate records, such as the Dewey decimal system.' },
+            { id: 3, term: 'Alphabetical System', def: 'The most widely used filing method (used by ~90% of offices) where files are arranged by name without cross-indexing.' },
+            { id: 4, term: 'Subject System', def: 'Filing method organized by topic or material rather than individual names, with papers arranged chronologically.' },
+            { id: 5, term: 'Subject Index', def: 'A card system for headings that prevents duplication of files and helps non-assistants trace records.' },
+            { id: 6, term: 'Cross-Reference Indexing', def: 'Using cards or logbooks to link connected files when subjects or entity names are complex.' },
+            { id: 7, term: 'Alphabetizing Personal Surnames', def: 'Indexing individual names by surname first; when surnames match, position is determined by given names.' },
+            { id: 8, term: 'Shorter Name Rule', def: 'When two similar names are of unequal length, filing the shorter name before the longer name (e.g., Smith, M. before Smith, Mary).' },
+            { id: 9, term: 'Surnames with Prefixes', def: 'Treating surname prefixes (e.g., Mac, Mc) as part of a single word during alphabetical ordering.' },
+            { id: 10, term: 'Hyphenated Company Names', def: 'Treating hyphenated words as single words, unless used as a comma where individual parts are separated.' },
+            { id: 11, term: 'Articles & Prepositions Rule', def: 'Disregarding words like "The", "and", "of", or "&" when alphabetizing business or organization names.' },
+            { id: 12, term: 'Numbers in Company Names', def: 'Alphabetizing numbers as if they were fully spelled out as words (e.g., 21 Club indexed under "Twenty-one").' },
+            { id: 13, term: 'Titles Disregard Rule', def: 'Disregarding professional titles like Dr., Mr., or Miss in personal names unless part of a company title.' },
+            { id: 14, term: 'Cabinet Labeling', def: 'Organizing filing drawers horizontally or vertically with clear alphabetical range labels (e.g., A-G, H-M).' },
+            { id: 15, term: 'Office Form Purposes', def: 'Tools that clarify needed data, speed up entry, eliminate repetitive writing, and streamline procedures.' },
+            { id: 16, term: 'Cost-Effectiveness Criteria', def: 'The primary metric used to appraise the design, necessity, and efficiency of office forms and procedures.' },
+            { id: 17, term: 'Electronic Form (e-Form)', def: 'A digital document allowing onscreen data entry and digital signatures to eliminate paper and speed processes.' },
+            { id: 18, term: 'Digital Signature Component', def: 'An e-form technical element used to verify the sender identity and ensure document integrity.' },
+            { id: 19, term: 'Electronic Filing Preservation', def: 'Focusing on long-term data preservation using optical, magnetic, or solid-state storage media.' },
+            { id: 20, term: 'Non-Exclusive File Formats', def: 'Choosing open, non-proprietary file formats for digital records to guarantee future access and usability.' },
+            { id: 21, term: 'OCR Technology', def: 'Optical Character Recognition technology used in scanning paper documents to convert text into searchable data.' },
+            { id: 22, term: 'EDMS Scan Step', def: 'The initial EDMS stage where physical paper files are digitized using scanning and OCR tools.' },
+            { id: 23, term: 'EDMS Registration/Archive', def: 'Storing digitized documents safely in system repositories, CDs, or cloud drives for long-term retention.' },
+            { id: 24, term: 'EDMS Index Step', def: 'Creating systematic cataloging metadata so file selection and categorization remain simple and fast.' },
+            { id: 25, term: 'EDMS Search Step', def: 'Retrieving required documents instantly using stored indexing metadata and full-text search systems.' },
+            { id: 26, term: 'Cloud Storage Providers', def: 'Services like Google Drive, Microsoft OneDrive, or Dropbox used for easy file sharing and reduced costs.' },
+            { id: 27, term: 'Chronological Arrangement', def: 'Ordering documents by date within subject folders, always placing the most recent date on top.' },
+            { id: 28, term: 'Office Record Lifecycle', def: 'The systematic process: receiving, recording, arranging, giving, and retaining information under close monitoring.' },
+            { id: 29, term: 'Single Letters as Words', def: 'Alphabetizing single letter company initials sequentially in normal order (e.g., BB Shop before BBB Service).' },
+            { id: 30, term: 'Seniority Designations Rule', def: 'Ordering identical names according to age/generational order (e.g., 2nd, III, Jr., Sr.).' },
+            { id: 31, term: 'Possessive "s" Rule', def: 'Considering the trailing "s" as part of the total word string when alphabetizing possessive names.' },
+            { id: 32, term: 'Company Title Exception', def: 'Retaining titles when they form the starting word of a corporate name (e.g., Queen Mary Boat Company).' },
+            { id: 33, term: 'Purchasing Form Workflow', def: 'Capturing item, quantity, price, and shipping data to guide sellers, buyers, accounting, and decision-makers.' },
+            { id: 34, term: 'Table Layout Components', def: 'The structural form layout elements within an electronic spreadsheet or e-form document.' },
+            { id: 35, term: 'Form Logical Components', def: 'The workflow definition and form detail structures embedded within electronic documents.' },
+            { id: 36, term: 'Digital Certificate Component', def: 'Issuer and encryption certificates used to validate security credentials in e-form software.' },
+            { id: 37, term: 'e-Form Filling Program', def: 'A specialized software utility designed to verify, complete, and digitally sign electronic forms.' },
+            { id: 38, term: 'Unstructured Text Files', def: 'Text-based electronic document formats containing unformatted narrative information.' },
+            { id: 39, term: 'Multimedia File Formats', def: 'Digital document categories encompassing audio recordings, pictures, and video media files.' },
+            { id: 40, term: 'Space Saving Benefit', def: 'Eliminating bulky paper cabinets by converting physical records into compact digital storage.' },
+            { id: 41, term: 'Multi-User Access Benefit', def: 'Allowing multiple team members to view and work on the same digital document simultaneously.' },
+            { id: 42, term: 'Storage Safety Benefit', def: 'Protecting records against loss by keeping digital backups stored in secure secondary locations.' },
+            { id: 43, term: 'Processing Incoming Mail', def: 'A routine office clerk activity involving receiving, opening, date-stamping, and routing physical mail.' },
+            { id: 44, term: 'Processing Outgoing Mail', def: 'An office activity involving folding, addressing, weighing, stamping, and dispatching letters.' },
+            { id: 45, term: 'Record Retrieval', def: 'Locating and extracting stored files from paper cabinets or electronic repositories when requested.' },
+            { id: 46, term: 'Record Disposal', def: 'Securely shredding or purging outdated records according to corporate retention schedules.' },
+            { id: 47, term: 'Filing Cabinet Proximity', def: 'Placing physical filing cabinets near employee desks for frequent, efficient access during workdays.' },
+            { id: 48, term: 'Geographical Filing System', def: 'A direct access filing method organizing records by country, state, city, or sales territory.' },
+            { id: 49, term: 'Dewey Decimal System', def: 'An indirect access numeric system dividing subjects into ten main headings (000-900) and subdivisions.' },
+            { id: 50, term: 'Folder Tab Labeling', def: 'Typing and applying clear, uniform name labels onto folder tabs for rapid visual identification.' },
+            { id: 51, term: 'Shared Drive Storage', def: 'Centralized network folders allowing team members to access and update active company files.' },
+            { id: 52, term: 'Solid-State Storage Media', def: 'High-speed electronic storage devices (such as SSDs or flash drives) used for data preservation.' },
+            { id: 53, term: 'Magnetic Storage Media', def: 'Digital storage technologies including hard disk drives and magnetic tapes used for archives.' },
+            { id: 54, term: 'Optical Storage Media', def: 'Data storage devices like CDs, DVDs, and Blu-ray discs used for reliable long-term records.' },
+            { id: 55, term: 'Preventing File Duplication', def: 'Using a subject index to verify whether a folder already exists before opening a new file.' },
+            { id: 56, term: 'Simplified Form Procedures', def: 'Standardizing fields on forms to eliminate manual rewriting and reduce administrative errors.' },
+            { id: 57, term: 'Proper Record Retention', def: 'Monitoring collected information systematically to ensure documents remain ready for future retrieval.' },
+            { id: 58, term: 'Document Control Policies', def: 'Rules and guidelines governing how incoming and outgoing files are handled and secured.' },
+            { id: 59, term: 'Instant File Selection', def: 'Retrieving digitized files in a single click through an Electronic Document Management System.' },
+            { id: 60, term: 'Information Systems Growth', def: 'Exponential growth of digital records driven by networked PCs, emails, and online business.' }
+        ];
+
+        let selectedTerm = null;
+        let selectedDef = null;
+        let currentPairs = [];
+        let matchedCount = 0;
+        const ITEMS_PER_SESSION = 6;
+
+        // Text-to-Speech (Professional US English)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize Assessment Session
+        function initGame() {
+            matchedCount = 0;
+            selectedTerm = null;
+            selectedDef = null;
+            document.getElementById('reward-modal').style.display = 'none';
+
+            // Randomly extract 6 items from the 60-item database
+            const shuffledDb = [...database].sort(() => 0.5 - Math.random());
+            currentPairs = shuffledDb.slice(0, ITEMS_PER_SESSION);
+
+            // Render Terms (Left Column)
+            const termsCol = document.getElementById('terms-column');
+            termsCol.innerHTML = '';
+            currentPairs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card term';
+                card.dataset.type = 'term';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.term);
+                card.innerHTML = `<div class="text">${item.term}</div>`;
+                termsCol.appendChild(card);
+            });
+
+            // Render Definitions (Right Column, Shuffled)
+            const defsCol = document.getElementById('defs-column');
+            defsCol.innerHTML = '';
+            const shuffledDefs = [...currentPairs].sort(() => 0.5 - Math.random());
+            shuffledDefs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.type = 'def';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.def);
+                card.innerHTML = `<div class="text">${item.def}</div>`;
+                defsCol.appendChild(card);
+            });
+
+            speak('New session loaded. Match each filing concept with its corresponding rule or definition.');
+        }
+
+        // Card Selection Handler
+        function selectCard(card, soundText) {
+            if (card.classList.contains('matched')) return;
+
+            speak(soundText);
+            const type = card.dataset.type;
+
+            if (type === 'term') {
+                if (selectedTerm) selectedTerm.classList.remove('selected');
+                selectedTerm = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedDef) selectedDef.classList.remove('selected');
+                selectedDef = card;
+                card.classList.add('selected');
+            }
+
+            if (selectedTerm && selectedDef) {
+                checkMatch();
+            }
+        }
+
+        // Match Verification
+        function checkMatch() {
+            const termId = selectedTerm.dataset.id;
+            const defId = selectedDef.dataset.id;
+
+            if (termId === defId) {
+                const t = selectedTerm;
+                const d = selectedDef;
+
+                setTimeout(() => {
+                    t.classList.remove('selected');
+                    d.classList.remove('selected');
+                    t.classList.add('matched');
+                    d.classList.add('matched');
+
+                    speak('Correct.');
+                    matchedCount++;
+
+                    if (matchedCount === ITEMS_PER_SESSION) {
+                        setTimeout(showReward, 800);
+                    }
+                }, 250);
+
+                selectedTerm = null;
+                selectedDef = null;
+            } else {
+                setTimeout(() => {
+                    speak('Incorrect match. Please try again.');
+                    selectedTerm.classList.remove('selected');
+                    selectedDef.classList.remove('selected');
+                    selectedTerm = null;
+                    selectedDef = null;
+                }, 500);
+            }
+        }
+
+        // Display Session Completion Modal
+        function showReward() {
+            document.getElementById('reward-modal').style.display = 'flex';
+            speak('Assessment completed successfully.');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR & Business Administration Knowledge Assessment</title>
+    <style>
+        :root {
+            --primary: #1E293B;
+            --accent: #0284C7;
+            --success: #15803D;
+            --error: #B91C1C;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --border: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            min-height: 70px;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.selected {
+            border-color: var(--accent);
+            background-color: #F0F9FF;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .card.matched {
+            border-color: var(--border);
+            background-color: #F1F5F9;
+            opacity: 0.35;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .card .text {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .card.term .text {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Business Assessment Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .modal h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0F172A;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>HR & Business Administration Knowledge Assessment</h1>
+        <p>Match each organizational concept on the left with its corresponding definition on the right.</p>
+    </div>
+
+    <div class="game-container">
+        <div class="column" id="terms-column"></div>
+        <div class="column" id="defs-column"></div>
+    </div>
+
+    <!-- Assessment Completed Modal -->
+    <div class="overlay" id="reward-modal">
+        <div class="modal">
+            <h2>Session Completed</h2>
+            <p>You have successfully verified proficiency in these 6 core business concepts.</p>
+            <button class="btn" onclick="initGame()">Start Next Session 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // 60 Professional Knowledge Items based on Unit 1: Business Administration
+        const database = [
+            { id: 1, term: 'Matrix Organization', def: 'A dual-reporting structure featuring both Functional Managers and Project Directors.' },
+            { id: 2, term: 'Flat Organization', def: 'A structure with few managerial levels, encouraging rapid communication and decision-making.' },
+            { id: 3, term: 'Hierarchical Organization', def: 'A traditional pyramid structure with clear lines of authority and top-down management.' },
+            { id: 4, term: 'Virtual Organization', def: 'A network-based structure relying on digital communication and remote contract workers.' },
+            { id: 5, term: 'Human Resources Department', def: 'Responsible for talent acquisition, training, compensation packages, and employee relations.' },
+            { id: 6, term: 'General Administration', def: 'Manages office infrastructure, equipment maintenance, stationery procurement, and facility leasing.' },
+            { id: 7, term: 'Purchasing Department', def: 'Sources qualified suppliers, manages raw material procurement, and maintains optimal inventory levels.' },
+            { id: 8, term: 'Board of Directors', def: 'Formulates overall enterprise strategies and maintains legal fiduciary duties to the company.' },
+            { id: 9, term: 'Corporate Synergy', def: 'Combines individual core competencies to achieve higher collective productivity than individual efforts.' },
+            { id: 10, term: 'Information Technology Dept', def: 'Oversees network infrastructure, system maintenance, cybersecurity, and data access permissions.' },
+            { id: 11, term: 'Finance & Accounting Dept', def: 'Handles financial reporting, budgeting, cash flow control, and tax compliance.' },
+            { id: 12, term: 'Operations Department', def: 'Oversees the daily production processes to ensure goods or services are delivered efficiently.' },
+            { id: 13, term: 'Marketing Department', def: 'Conducts market research, develops brand strategies, and executes promotional campaigns.' },
+            { id: 14, term: 'Sales Department', def: 'Focuses on customer acquisition, contract negotiation, and achieving revenue targets.' },
+            { id: 15, term: 'Research & Development (R&D)', def: 'Drives product innovation, technical improvements, and long-term product competitiveness.' },
+            { id: 16, term: 'Span of Control', def: 'Refers to the number of subordinates a manager or supervisor directly oversees.' },
+            { id: 17, term: 'Chain of Command', def: 'The continuous line of authority that extends from top management to the lowest employee level.' },
+            { id: 18, term: 'Centralization', def: 'The degree to which decision-making authority is concentrated at higher levels of management.' },
+            { id: 19, term: 'Decentralization', def: 'Delegates decision-making authority to lower-level managers or front-line staff.' },
+            { id: 20, term: 'Organization Chart', def: 'A visual diagram that illustrates the internal structure, roles, and reporting lines of a company.' },
+            { id: 21, term: 'Chief Executive Officer (CEO)', def: 'Holds top executive responsibility for managing overall company operations and strategy.' },
+            { id: 22, term: 'Chief Financial Officer (CFO)', def: 'Directs the financial strategy, risk management, and capital structure of the organization.' },
+            { id: 23, term: 'Chief Operating Officer (COO)', def: 'Oversees business operations, daily administrative tasks, and operational efficiency.' },
+            { id: 24, term: 'Fiduciary Duty', def: 'The legal obligation to act solely in the best financial interest of the organization.' },
+            { id: 25, term: 'Onboarding Process', def: 'Integrates new employees into the company, providing necessary tools, training, and orientation.' },
+            { id: 26, term: 'Performance Appraisal', def: 'A systematic evaluation of an employee\'s work performance and development needs.' },
+            { id: 27, term: 'Job Description (JD)', def: 'Outlines the specific duties, responsibilities, required skills, and working conditions of a role.' },
+            { id: 28, term: 'Job Specification', def: 'Defines the minimum qualifications, education, and experience required for a specific job.' },
+            { id: 29, term: 'Workforce Planning', def: 'Analyzes current staffing levels and forecasts future human resource needs to meet strategic goals.' },
+            { id: 30, term: 'Employee Retention', def: 'Organizational policies designed to keep productive employees and reduce turnover rates.' },
+            { id: 31, term: 'KPI (Key Performance Indicator)', def: 'A measurable value that demonstrates how effectively a company is achieving key business goals.' },
+            { id: 32, term: 'SLA (Service Level Agreement)', def: 'A formal commitment defining the expected level of service between a provider and a client.' },
+            { id: 33, term: 'Inventory Management', def: 'The process of ordering, storing, and tracking materials to balance supply and demand.' },
+            { id: 34, term: 'Procurement Process', def: 'The sequence of activities to negotiate terms, acquire goods, and approve vendor payments.' },
+            { id: 35, term: 'Risk Management', def: 'Identifying, assessing, and mitigating operational, financial, or legal threats to the company.' },
+            { id: 36, term: 'Compliance Officer', def: 'Ensures the company operates in adherence to industry regulations, labor laws, and internal policies.' },
+            { id: 37, term: 'Corporate Governance', def: 'The framework of rules, relationships, and systems by which corporations are directed and controlled.' },
+            { id: 38, term: 'Corporate Social Responsibility', def: 'A business strategy integrating social, ethical, and environmental concerns into commercial operations.' },
+            { id: 39, term: 'Cross-functional Team', def: 'A group composed of members from different departments working together on a specific objective.' },
+            { id: 40, term: 'Outsourcing', def: 'Contracting external third-party vendors to handle non-core business activities or services.' },
+            { id: 41, term: 'Offshoring', def: 'Relocating certain operational processes or services to another country to lower operational costs.' },
+            { id: 42, term: 'Business Continuity Plan', def: 'A framework outlining how a business will recover and maintain operations during a major crisis.' },
+            { id: 43, term: 'Crisis Management', def: 'Strategies used to respond to sudden, high-impact emergency events affecting the business.' },
+            { id: 44, term: 'Vendor Management', def: 'Building, monitoring, and maintaining strong, cost-effective partnerships with third-party suppliers.' },
+            { id: 45, term: 'Facility Management', def: 'Ensuring efficient maintenance, physical safety, and space management of commercial premises.' },
+            { id: 46, term: 'Asset Management', def: 'Tracking physical and digital company assets throughout their life cycle to maximize ROI.' },
+            { id: 47, term: 'Budget Allocation', def: 'Assigning available financial resources to specific departments, projects, or operational activities.' },
+            { id: 48, term: 'Cost Control', def: 'Identifying and reducing business expenses to increase profits and operational efficiency.' },
+            { id: 49, term: 'Auditing', def: 'An objective examination and evaluation of an organization\'s financial statements and processes.' },
+            { id: 50, term: 'Internal Communication', def: 'The strategic exchange of information, values, and policies among employees within an organization.' },
+            { id: 51, term: 'Conflict Resolution', def: 'Methods and processes involved in facilitating the peaceful ending of workplace disputes.' },
+            { id: 52, term: 'Change Management', def: 'A structured approach to transitioning individuals, teams, and organizations to a desired future state.' },
+            { id: 53, term: 'Talent Management', def: 'The strategic process of attracting, developing, managing, and retaining top-performing employees.' },
+            { id: 54, term: 'Succession Planning', def: 'Identifying and developing internal talent to fill key leadership positions in the future.' },
+            { id: 55, term: 'Employee Engagement', def: 'The emotional commitment and dedication an employee has towards their organization and goals.' },
+            { id: 56, term: 'Standard Operating Procedure', def: 'Step-by-step instructions compiled to help workers carry out routine operational tasks consistently.' },
+            { id: 57, term: 'Workflow Optimization', def: 'Analyzing and improving existing workplace processes to eliminate redundancies and delays.' },
+            { id: 58, term: 'Document Control', def: 'Managing the creation, approval, distribution, and archiving of critical company documents.' },
+            { id: 59, term: 'Information Security', def: 'Practices designed to protect digital and physical confidential data from unauthorized access or breaches.' },
+            { id: 60, term: 'Quality Assurance (QA)', def: 'Systematic activities implemented in a quality system to ensure products or services meet standards.' }
+        ];
+
+        let selectedTerm = null;
+        let selectedDef = null;
+        let currentPairs = [];
+        let matchedCount = 0;
+        const ITEMS_PER_SESSION = 6; // 固定每次抽 6 題
+
+        // Executive Text-to-Speech
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize Assessment Session (Extracts 6 random pairs from 60 items)
+        function initGame() {
+            matchedCount = 0;
+            selectedTerm = null;
+            selectedDef = null;
+            document.getElementById('reward-modal').style.display = 'none';
+
+            // Randomize whole database and pick 6 items
+            const shuffledDb = [...database].sort(() => 0.5 - Math.random());
+            currentPairs = shuffledDb.slice(0, ITEMS_PER_SESSION);
+
+            // Render Terms (Left Column)
+            const termsCol = document.getElementById('terms-column');
+            termsCol.innerHTML = '';
+            currentPairs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card term';
+                card.dataset.type = 'term';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.term);
+                card.innerHTML = `<div class="text">${item.term}</div>`;
+                termsCol.appendChild(card);
+            });
+
+            // Render Definitions (Right Column, Shuffled Order)
+            const defsCol = document.getElementById('defs-column');
+            defsCol.innerHTML = '';
+            const shuffledDefs = [...currentPairs].sort(() => 0.5 - Math.random());
+            shuffledDefs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.type = 'def';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.def);
+                card.innerHTML = `<div class="text">${item.def}</div>`;
+                defsCol.appendChild(card);
+            });
+
+            speak('New assessment loaded. Please pair the 6 terms with their definitions.');
+        }
+
+        // Selection Handler
+        function selectCard(card, soundText) {
+            if (card.classList.contains('matched')) return;
+
+            speak(soundText);
+            const type = card.dataset.type;
+
+            if (type === 'term') {
+                if (selectedTerm) selectedTerm.classList.remove('selected');
+                selectedTerm = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedDef) selectedDef.classList.remove('selected');
+                selectedDef = card;
+                card.classList.add('selected');
+            }
+
+            if (selectedTerm && selectedDef) {
+                checkMatch();
+            }
+        }
+
+        // Check Matching Correctness
+        function checkMatch() {
+            const termId = selectedTerm.dataset.id;
+            const defId = selectedDef.dataset.id;
+
+            if (termId === defId) {
+                const t = selectedTerm;
+                const d = selectedDef;
+
+                setTimeout(() => {
+                    t.classList.remove('selected');
+                    d.classList.remove('selected');
+                    t.classList.add('matched');
+                    d.classList.add('matched');
+
+                    speak('Correct.');
+                    matchedCount++;
+
+                    if (matchedCount === ITEMS_PER_SESSION) {
+                        setTimeout(showReward, 800);
+                    }
+                }, 250);
+
+                selectedTerm = null;
+                selectedDef = null;
+            } else {
+                setTimeout(() => {
+                    speak('Incorrect match. Please review and try again.');
+                    selectedTerm.classList.remove('selected');
+                    selectedDef.classList.remove('selected');
+                    selectedTerm = null;
+                    selectedDef = null;
+                }, 500);
+            }
+        }
+
+        // Display Assessment Conclusion
+        function showReward() {
+            document.getElementById('reward-modal').style.display = 'flex';
+            speak('Assessment complete. Excellent performance.');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>

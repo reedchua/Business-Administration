@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Office Services Centralization Assessment</title>
+    <style>
+        :root {
+            --primary: #1E293B;
+            --accent: #0284C7;
+            --success: #15803D;
+            --error: #B91C1C;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --border: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            min-height: 75px;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.selected {
+            border-color: var(--accent);
+            background-color: #F0F9FF;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .card.matched {
+            border-color: var(--border);
+            background-color: #F1F5F9;
+            opacity: 0.35;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .card .text {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .card.term .text {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Business Assessment Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .modal h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0F172A;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Office Services & Centralization Assessment</h1>
+        <p>Match each office service concept, centralization advantage, or disadvantage on the left with its definition on the right.</p>
+    </div>
+
+    <div class="game-container">
+        <div class="column" id="terms-column"></div>
+        <div class="column" id="defs-column"></div>
+    </div>
+
+    <!-- Assessment Completed Modal -->
+    <div class="overlay" id="reward-modal">
+        <div class="modal">
+            <h2>Session Completed</h2>
+            <p>You have successfully verified proficiency in these 6 office service management concepts.</p>
+            <button class="btn" onclick="initGame()">Start Next Session 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // 50 Professional Knowledge Items extracted & expanded from Chapter 11
+        const database = [
+            { id: 1, term: 'Sectional Offices', def: 'Clerical units established within functional departments like Production or Marketing to provide localized administrative support.' },
+            { id: 2, term: 'Centralization of Office Services', def: 'Physical concentration of common administrative functions in ONE General Office under an Office Manager.' },
+            { id: 3, term: 'General Office Supervision', def: 'Centralized control and direction of routine support activities under the direct management of an Office Manager.' },
+            { id: 4, term: 'Reproduction & Duplicating Service', def: 'Centralized printing, copying, and scanning operations managed for all functional departments.' },
+            { id: 5, term: 'Records Management & Indexing', def: 'Systematic filing, indexing, and storing of organizational documents to ensure quick retrieval.' },
+            { id: 6, term: 'Forms Design and Control', def: 'Standardizing and regulating standardized paper and digital forms across the entire organization.' },
+            { id: 7, term: 'Central Mail & Courier Service', def: 'Unified handling of incoming, outgoing, and inter-office postal and courier packages.' },
+            { id: 8, term: 'Reception Services', def: 'Centralized visitor greeting, call screening, and initial public contact point for the organization.' },
+            { id: 9, term: 'Interdependence of Office Services', def: 'The operational principle that administrative activities are interrelated, with efficiency depending on each other.' },
+            { id: 10, term: 'Better Administrative Control', def: 'Balanced distribution of workload among central staff to ensure no employees are overloaded or left idle.' },
+            { id: 11, term: 'Relief to Other Departments', def: 'Freeing functional department heads from routine supervisory tasks so they can focus on core technical duties.' },
+            { id: 12, term: 'Facilitates Specialization', def: 'Enabling General Office personnel to become domain specialists through repetitive performance of routine tasks.' },
+            { id: 13, term: 'Handling Peak Workloads', def: 'Flexible reallocation of central office staff to easily absorb sudden increases in administrative work volume.' },
+            { id: 14, term: 'Equipment Standardization', def: 'Using standardized office machinery across units under continuous supervisory management.' },
+            { id: 15, term: 'Avoidance of Duplication', def: 'Preventing multiple departments from purchasing redundant equipment, machinery, or hiring duplicate staff.' },
+            { id: 16, term: 'Cost Savings in Operations', def: 'Achieving financial savings through bulk machine usage, reduced wastage, and standardized methods.' },
+            { id: 17, term: 'Improved Quality of Work', def: 'Ensuring higher accuracy and output standards through closer, specialized administrative supervision.' },
+            { id: 18, term: 'More Continuous Service', def: 'Minimizing service disruptions or delays caused by reliance on specific individual personnel.' },
+            { id: 19, term: 'Work Delay in Centralized Setup', def: 'Time lost transferring documents or requests back and forth between functional units and the General Office.' },
+            { id: 20, term: 'Priority Disregard Risk', def: 'The risk that General Office staff fail to observe urgent priority tasks of specific primary departments.' },
+            { id: 21, term: 'Technical Term Misunderstanding', def: 'General Office personnel failing to grasp specialized departmental jargon, leading to frequent clarification delays.' },
+            { id: 22, term: 'Confidentiality Breakdown Risk', def: 'Inability to guarantee strict secrecy when sensitive departmental files are handled in a general central office.' },
+            { id: 23, term: 'Lack of Departmental Loyalty', def: 'General Office staff lacking personal interest or dedication to specific functional departments they serve.' },
+            { id: 24, term: 'Single Point of Failure Effect', def: 'Operational bottlenecks at the General Office directly disrupting performance across all serving departments.' },
+            { id: 25, term: 'Rigid Central Control Frustration', def: 'Strict administrative rules and tight control mechanisms causing morale degradation and staff frustration.' },
+            { id: 26, term: 'Increased Record-Keeping', def: 'Additional paperwork and tracking logs required to maintain control and oversight of centralized operations.' },
+            { id: 27, term: 'Lack of Frontline Contact', def: 'Central office supervisors having limited direct practical contact with operational frontline personnel.' },
+            { id: 28, term: 'Decentralized Mail Advantage', def: 'Faster direct handling of urgent incoming mail and specific files within localized departmental units.' },
+            { id: 29, term: 'Inter-departmental Communication Barrier', def: 'Misunderstandings regarding completion timelines and job requirements between service units and primary departments.' },
+            { id: 30, term: 'Department-Specific Data Usage', def: 'Information or specialized records that are exclusively needed and best managed within a single department.' },
+            { id: 31, term: 'Central Telephone & Fax Management', def: 'Consolidating telecommunication lines and fax dispatch under a unified general administrative unit.' },
+            { id: 32, term: 'Centralized Messenger Service', def: 'Deploying dedicated internal couriers to handle document movement across various physical office floors.' },
+            { id: 33, term: 'Centralized Computer Support', def: 'Consolidating IT infrastructure and user support services within a single administrative service department.' },
+            { id: 34, term: 'Centralized Stationery Control', def: 'Managing inventory, storage, and issuance of office supplies from a single central storage facility.' },
+            { id: 35, term: 'Office Cleaning & Maintenance', def: 'Scheduling facility upkeep and repair operations centrally for all departmental physical areas.' },
+            { id: 36, term: 'Clerical Staff Employment & Training', def: 'Centralizing the hiring, onboarding, and skill development of junior administrative employees.' },
+            { id: 37, term: 'Attendance & Discipline Management', def: 'Maintaining centralized timekeeping, attendance logging, and behavioral policy enforcement.' },
+            { id: 38, term: 'Centralized Library Service', def: 'Managing corporate reference books, journals, and documentation in a single accessible center.' },
+            { id: 39, term: 'Equipment Repair Coordination', def: 'Managing service contracts and maintenance requests for all office machinery centrally.' },
+            { id: 40, term: 'Standardization of Office Methods', def: 'Implementing uniform operational procedures and workflow rules across all administrative tasks.' },
+            { id: 41, term: 'Wastage Reduction Strategy', def: 'Optimizing resource consumption to eliminate unnecessary supply consumption or equipment idle time.' },
+            { id: 42, term: 'Supervisory Responsibility Relief', def: 'Allowing technical managers to offload routine administrative staff monitoring to the General Office.' },
+            { id: 43, term: 'Flexibility in Staff Deployment', def: 'Reassigning central personnel dynamically to meet shifting operational demands across departments.' },
+            { id: 44, term: 'Physical Transit Time Disadvantage', def: 'Delays caused by physical distance and transport time between central service units and client offices.' },
+            { id: 45, term: 'Explanation & Briefing Overhead', def: 'Extra time spent explaining complex task requirements to central staff who lack domain context.' },
+            { id: 46, term: 'Departmental Specificity Principle', def: 'The operational rationale for keeping unique, confidential, or single-use records within local departments.' },
+            { id: 47, term: 'Clerical Service Pooling', def: 'Consolidating typists, data entry clerks, and administrative assistants into a shared resource pool.' },
+            { id: 48, term: 'Service Efficiency Interdependence', def: 'Recognizing that delays in centralized mail or filing directly affect overall organizational performance.' },
+            { id: 49, term: 'Central Administrative Control', def: 'Maintaining standard policies, performance monitoring, and quality standards from a unified office.' },
+            { id: 50, term: 'Decentralized File Handling Speed', def: 'Rapid retrieval of specialized files located immediately within the working department\'s physical area.' }
+        ];
+
+        let selectedTerm = null;
+        let selectedDef = null;
+        let currentPairs = [];
+        let matchedCount = 0;
+        const ITEMS_PER_SESSION = 6;
+
+        // Text-to-Speech (Professional US English)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize Assessment Session
+        function initGame() {
+            matchedCount = 0;
+            selectedTerm = null;
+            selectedDef = null;
+            document.getElementById('reward-modal').style.display = 'none';
+
+            // Randomly extract 6 items from the 50-item database
+            const shuffledDb = [...database].sort(() => 0.5 - Math.random());
+            currentPairs = shuffledDb.slice(0, ITEMS_PER_SESSION);
+
+            // Render Terms (Left Column)
+            const termsCol = document.getElementById('terms-column');
+            termsCol.innerHTML = '';
+            currentPairs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card term';
+                card.dataset.type = 'term';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.term);
+                card.innerHTML = `<div class="text">${item.term}</div>`;
+                termsCol.appendChild(card);
+            });
+
+            // Render Definitions (Right Column, Shuffled)
+            const defsCol = document.getElementById('defs-column');
+            defsCol.innerHTML = '';
+            const shuffledDefs = [...currentPairs].sort(() => 0.5 - Math.random());
+            shuffledDefs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.type = 'def';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.def);
+                card.innerHTML = `<div class="text">${item.def}</div>`;
+                defsCol.appendChild(card);
+            });
+
+            speak('New session loaded. Match each office service concept with its definition.');
+        }
+
+        // Card Selection Handler
+        function selectCard(card, soundText) {
+            if (card.classList.contains('matched')) return;
+
+            speak(soundText);
+            const type = card.dataset.type;
+
+            if (type === 'term') {
+                if (selectedTerm) selectedTerm.classList.remove('selected');
+                selectedTerm = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedDef) selectedDef.classList.remove('selected');
+                selectedDef = card;
+                card.classList.add('selected');
+            }
+
+            if (selectedTerm && selectedDef) {
+                checkMatch();
+            }
+        }
+
+        // Match Verification
+        function checkMatch() {
+            const termId = selectedTerm.dataset.id;
+            const defId = selectedDef.dataset.id;
+
+            if (termId === defId) {
+                const t = selectedTerm;
+                const d = selectedDef;
+
+                setTimeout(() => {
+                    t.classList.remove('selected');
+                    d.classList.remove('selected');
+                    t.classList.add('matched');
+                    d.classList.add('matched');
+
+                    speak('Correct.');
+                    matchedCount++;
+
+                    if (matchedCount === ITEMS_PER_SESSION) {
+                        setTimeout(showReward, 800);
+                    }
+                }, 250);
+
+                selectedTerm = null;
+                selectedDef = null;
+            } else {
+                setTimeout(() => {
+                    speak('Incorrect match. Please try again.');
+                    selectedTerm.classList.remove('selected');
+                    selectedDef.classList.remove('selected');
+                    selectedTerm = null;
+                    selectedDef = null;
+                }, 500);
+            }
+        }
+
+        // Display Session Completion Modal
+        function showReward() {
+            document.getElementById('reward-modal').style.display = 'flex';
+            speak('Assessment completed successfully.');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>

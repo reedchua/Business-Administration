@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corporate Culture, Ethics & Governance Assessment</title>
+    <style>
+        :root {
+            --primary: #1E293B;
+            --accent: #0284C7;
+            --success: #15803D;
+            --error: #B91C1C;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --border: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            min-height: 75px;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.selected {
+            border-color: var(--accent);
+            background-color: #F0F9FF;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .card.matched {
+            border-color: var(--border);
+            background-color: #F1F5F9;
+            opacity: 0.35;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .card .text {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .card.term .text {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Business Assessment Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .modal h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0F172A;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Corporate Culture, Ethics & Governance Assessment</h1>
+        <p>Match each corporate governance and ethics concept on the left with its corresponding definition on the right.</p>
+    </div>
+
+    <div class="game-container">
+        <div class="column" id="terms-column"></div>
+        <div class="column" id="defs-column"></div>
+    </div>
+
+    <!-- Assessment Completed Modal -->
+    <div class="overlay" id="reward-modal">
+        <div class="modal">
+            <h2>Session Completed</h2>
+            <p>You have successfully verified proficiency in these 6 core governance and ethics concepts.</p>
+            <button class="btn" onclick="initGame()">Start Next Session 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // 60 Professional Knowledge Items extracted & expanded from Section 3
+        const database = [
+            { id: 1, term: 'Corporate Culture', def: 'A set of shared values, assumptions, and beliefs that directs employee behavior within an organization.' },
+            { id: 2, term: 'Strong Culture', def: 'A deeply embedded organizational culture where employees firmly understand and align with corporate goals.' },
+            { id: 3, term: 'Weak Culture', def: 'A culture characterized by vague, inconsistent guidelines, resulting in behaviors that oppose firm objectives.' },
+            { id: 4, term: 'Cultural Yardsticks', def: 'The three foundational elements used to measure corporate culture: beliefs, values, and behaviors.' },
+            { id: 5, term: 'Individual Ethics', def: 'Personal moral principles governing individual behavior in search of goodness, integrity, and fairness.' },
+            { id: 6, term: 'Business Ethics', def: 'A special set of behavioral standards and guidelines guiding commercial activities and corporate practices.' },
+            { id: 7, term: 'ETHICS PLUS Model', def: 'A decision-making framework developed by the ICAC to resolve complex ethical dilemmas in management.' },
+            { id: 8, term: 'The Sunshine Test', def: 'Evaluating whether an ethical decision can be discussed publicly and disclosed openly without misgivings.' },
+            { id: 9, term: 'Corporate Governance', def: 'The framework of roles and practices used by executive management and directors to serve stakeholder interests.' },
+            { id: 10, term: 'Stakeholders', def: 'Parties affected by firm activities, including shareholders, creditors, suppliers, employees, and communities.' },
+            { id: 11, term: 'Rights of Shareholders', def: 'The corporate principle ensuring fair treatment and open communication for shareholders to exercise voting rights.' },
+            { id: 12, term: 'Disclosure & Transparency', def: 'The requirement to provide timely, balanced, and accurate public disclosure of all material financial matters.' },
+            { id: 13, term: 'Board Independence', def: 'Ensuring board members maintain sufficient objectivity and relevant expertise to oversee executive performance.' },
+            { id: 14, term: 'Code of Conduct', def: 'A formal document defining ethical principles, trade standards, and expected professional compliance.' },
+            { id: 15, term: 'Bribery Prevention Ordinance', def: 'Hong Kong statutory legislation strictly prohibiting corrupt payments, secret commissions, and illegal advantages.' },
+            { id: 16, term: 'Insider Dealing Ordinance', def: 'Legal regulations prohibiting trading securities based on non-public, price-sensitive corporate information.' },
+            { id: 17, term: 'Integrity & Due Diligence', def: 'Fundamental expectations for businessmen to deliver goods and services ethically and conscientiously.' },
+            { id: 18, term: 'Sub-culture', def: 'Distinct cultural variations within specific departments that deviate slightly from the dominant culture.' },
+            { id: 19, term: 'Fiduciary Responsibility', def: 'The legal and moral obligation of corporate officers to act honesty and solely in the company’s best interest.' },
+            { id: 20, term: 'ICAC Guidance', def: 'Ethical governance frameworks provided by Hong Kong’s Independent Commission Against Corruption.' },
+            { id: 21, term: 'Ethical Dilemma', def: 'A complex situation where moral imperatives conflict, requiring systematic evaluation using models like PLUS.' },
+            { id: 22, term: 'Corporate Accountability', def: 'The obligation of corporate leadership to explain, justify, and take responsibility for company outcomes.' },
+            { id: 23, term: 'Uncompromising Self-Values', def: 'Personal core principles such as honesty, trustworthiness, and fairness that cannot be negotiated away.' },
+            { id: 24, term: 'Financial Integrity', def: 'Implementing independent procedures to verify and safeguard the accuracy of corporate financial reporting.' },
+            { id: 25, term: 'Social Responsibility', def: 'Acknowledging contractual, social, and environmental obligations to non-shareholder community groups.' },
+            { id: 26, term: 'Whistleblowing Policy', def: 'Internal reporting mechanisms allowing employees to report unethical or illegal practices confidentially.' },
+            { id: 27, term: 'Conflict of Interest', def: 'A situation where personal interests compromise an individual’s professional judgment or objectivity.' },
+            { id: 28, term: 'Regulatory Compliance', def: 'Adhering strictly to statutory laws, government department guidelines, and industry-specific regulations.' },
+            { id: 29, term: 'Board Accountability', def: 'The responsibility of the board of directors to supervise management and safeguard overall enterprise value.' },
+            { id: 30, term: 'Fair Dealing', def: 'Conducting business transactions equitably with customers, competitors, and suppliers without deception.' },
+            { id: 31, term: 'Moral Philosophy', def: 'The systematic study of principles, rules, and values used to determine right and wrong behavior.' },
+            { id: 32, term: 'Unethical Business Practices', def: 'Prohibited commercial behaviors such as illegal campaign contributions, bribery, and market manipulation.' },
+            { id: 33, term: 'Establish the Relevant Facts', def: 'The initial step in the ETHICS model involving gathering accurate data and identifying moral issues.' },
+            { id: 34, term: 'Stakeholder Stocktaking', def: 'Identifying all affected internal and external parties during an ethical decision-making process.' },
+            { id: 35, term: 'Objective Assessment', def: 'Evaluating each stakeholder’s position impartially without bias or personal prejudice.' },
+            { id: 36, term: 'Viable Alternatives', def: 'Identifying multiple actionable solutions and assessing their consequences on surrounding stakeholders.' },
+            { id: 37, term: 'Evaluation via PLUS Factors', def: 'Comparing potential actions against Professional codes, Legal rules, Self-values, and the Sunshine test.' },
+            { id: 38, term: 'Selection of Action', def: 'Finalizing and executing the most appropriate, ethically defensible course of action in management.' },
+            { id: 39, term: 'Professional Standards', def: 'Industry-specific rules of conduct published by bodies like the Hong Kong Institute of Certified Public Accountants.' },
+            { id: 40, term: 'Equitable Treatment', def: 'Ensuring minority shareholders enjoy equal rights and protections as majority equity holders.' },
+            { id: 41, term: 'Corporate Reputation', def: 'The overall public perception of a company’s integrity, ethical standing, and operational reliability.' },
+            { id: 42, term: 'Corporate Vision & Mission', def: 'Core statements defining an enterprise’s long-term purpose, target direction, and underlying principles.' },
+            { id: 43, term: 'Tone at the Top', def: 'The ethical leadership atmosphere demonstrated by senior management and the board of directors.' },
+            { id: 44, term: 'Anti-Corruption Framework', def: 'Internal policies and auditing controls designed to detect and prevent corrupt operational activities.' },
+            { id: 45, term: 'Equal Opportunities', def: 'Fair employment practices preventing discrimination based on gender, age, disability, or ethnicity.' },
+            { id: 46, term: 'Data Privacy Governance', def: 'Policies protecting personal data gathered from customers, employees, and business partners.' },
+            { id: 47, term: 'Audit Committee', def: 'An independent subcommittee of the board overseeing financial reporting and risk management.' },
+            { id: 48, term: 'Remuneration Committee', def: 'A specialized board committee responsible for establishing objective executive compensation schemes.' },
+            { id: 49, term: 'Nomination Committee', def: 'A board committee dedicated to assessing leadership gaps and recommending qualified directors.' },
+            { id: 50, term: 'Non-Executive Director (NED)', def: 'Independent board members providing unbiased judgment and oversight without daily managerial duties.' },
+            { id: 51, term: 'Risk Oversight', def: 'The board’s responsibility to monitor strategic, financial, operational, and ethical business risks.' },
+            { id: 52, term: 'Material Information', def: 'Key corporate information that could significantly impact investor decisions or share valuation.' },
+            { id: 53, term: 'Corporate Citizenship', def: 'The extent to which a firm meets its administrative, social, and ethical responsibilities to society.' },
+            { id: 54, term: 'Sustainability Reporting', def: 'Public disclosures detailing a company’s Environmental, Social, and Governance (ESG) performance.' },
+            { id: 55, term: 'Duty of Care', def: 'The legal obligation of corporate officers to exercise reasonable care and skill when managing affairs.' },
+            { id: 56, term: 'Gift & Entertainment Policy', def: 'Corporate guidelines defining acceptable limits for receiving business hospitality to prevent bribery.' },
+            { id: 57, term: 'Value System', def: 'An organized set of personal or corporate values that guides decision-making in complex situations.' },
+            { id: 58, term: 'Organizational Beliefs', def: 'Shared understandings regarding how the business functions and what priorities lead to success.' },
+            { id: 59, term: 'Inconsistent Guidelines', def: 'Unclear policy directives that create confusion and weaken employee commitment to corporate ethics.' },
+            { id: 60, term: 'Timely Disclosure', def: 'Releasing important company updates promptly to ensure all market participants have equal access.' }
+        ];
+
+        let selectedTerm = null;
+        let selectedDef = null;
+        let currentPairs = [];
+        let matchedCount = 0;
+        const ITEMS_PER_SESSION = 6;
+
+        // Text-to-Speech (Professional US English)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize Assessment Session
+        function initGame() {
+            matchedCount = 0;
+            selectedTerm = null;
+            selectedDef = null;
+            document.getElementById('reward-modal').style.display = 'none';
+
+            // Randomly extract 6 items from the 60-item database
+            const shuffledDb = [...database].sort(() => 0.5 - Math.random());
+            currentPairs = shuffledDb.slice(0, ITEMS_PER_SESSION);
+
+            // Render Terms (Left Column)
+            const termsCol = document.getElementById('terms-column');
+            termsCol.innerHTML = '';
+            currentPairs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card term';
+                card.dataset.type = 'term';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.term);
+                card.innerHTML = `<div class="text">${item.term}</div>`;
+                termsCol.appendChild(card);
+            });
+
+            // Render Definitions (Right Column, Shuffled)
+            const defsCol = document.getElementById('defs-column');
+            defsCol.innerHTML = '';
+            const shuffledDefs = [...currentPairs].sort(() => 0.5 - Math.random());
+            shuffledDefs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.type = 'def';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.def);
+                card.innerHTML = `<div class="text">${item.def}</div>`;
+                defsCol.appendChild(card);
+            });
+
+            speak('New session loaded. Match each governance and ethics term with its definition.');
+        }
+
+        // Card Selection Handler
+        function selectCard(card, soundText) {
+            if (card.classList.contains('matched')) return;
+
+            speak(soundText);
+            const type = card.dataset.type;
+
+            if (type === 'term') {
+                if (selectedTerm) selectedTerm.classList.remove('selected');
+                selectedTerm = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedDef) selectedDef.classList.remove('selected');
+                selectedDef = card;
+                card.classList.add('selected');
+            }
+
+            if (selectedTerm && selectedDef) {
+                checkMatch();
+            }
+        }
+
+        // Match Verification
+        function checkMatch() {
+            const termId = selectedTerm.dataset.id;
+            const defId = selectedDef.dataset.id;
+
+            if (termId === defId) {
+                const t = selectedTerm;
+                const d = selectedDef;
+
+                setTimeout(() => {
+                    t.classList.remove('selected');
+                    d.classList.remove('selected');
+                    t.classList.add('matched');
+                    d.classList.add('matched');
+
+                    speak('Correct.');
+                    matchedCount++;
+
+                    if (matchedCount === ITEMS_PER_SESSION) {
+                        setTimeout(showReward, 800);
+                    }
+                }, 250);
+
+                selectedTerm = null;
+                selectedDef = null;
+            } else {
+                setTimeout(() => {
+                    speak('Incorrect match. Please try again.');
+                    selectedTerm.classList.remove('selected');
+                    selectedDef.classList.remove('selected');
+                    selectedTerm = null;
+                    selectedDef = null;
+                }, 500);
+            }
+        }
+
+        // Display Session Completion Modal
+        function showReward() {
+            document.getElementById('reward-modal').style.display = 'flex';
+            speak('Assessment completed successfully.');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>

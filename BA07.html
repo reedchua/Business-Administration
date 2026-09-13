@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Information Retrieval & Meeting Management Assessment</title>
+    <style>
+        :root {
+            --primary: #1E293B;
+            --accent: #0284C7;
+            --success: #15803D;
+            --error: #B91C1C;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --border: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            min-height: 75px;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.selected {
+            border-color: var(--accent);
+            background-color: #F0F9FF;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .card.matched {
+            border-color: var(--border);
+            background-color: #F1F5F9;
+            opacity: 0.35;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .card .text {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .card.term .text {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Business Assessment Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .modal h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0F172A;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Information Retrieval & Meeting Management Assessment</h1>
+        <p>Match each filing mistake, mail sorting method, or meeting administration duty on the left with its definition on the right.</p>
+    </div>
+
+    <div class="game-container">
+        <div class="column" id="terms-column"></div>
+        <div class="column" id="defs-column"></div>
+    </div>
+
+    <!-- Assessment Completed Modal -->
+    <div class="overlay" id="reward-modal">
+        <div class="modal">
+            <h2>Session Completed</h2>
+            <p>You have successfully verified proficiency in these 6 filing organization and meeting administration concepts.</p>
+            <button class="btn" onclick="initGame()">Start Next Session 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // 60 Professional Knowledge Items extracted & expanded from Section 8
+        const database = [
+            { id: 1, term: 'Over-Fragmented Filing Mistake', def: 'Creating separate folders for every single document type, resulting in numerous files containing only a few papers.' },
+            { id: 2, term: 'Long Title Filing Mistake', def: 'Assigning overly verbose file names (e.g., "How to Contract Out Engineering Work?") which hinders clear categorization.' },
+            { id: 3, term: 'Alphabetic Filing System', def: 'Categorizing correspondence and business records using entity names or geographical locations from A to Z.' },
+            { id: 4, term: 'Subject Filing System', def: 'Organizing documents according to specific operational topics, items, or administrative categories.' },
+            { id: 5, term: 'Chronological Filing System', def: 'Arranging files strictly by date, ensuring that the most current record is always placed at the front.' },
+            { id: 6, term: 'Working Project Files', def: 'Action-oriented active files representing current client accounts, project names, courses, or vendor contracts.' },
+            { id: 7, term: 'Working Administrative Files', def: 'Ongoing operational files containing subject matters like budgets, staff meeting notes, and accounts payable.' },
+            { id: 8, term: 'Filing Maintenance Schedule', def: 'Establishing periodic timeframes (e.g., quarterly or bi-annually) to purge obsolete notes and organize seldom-used files.' },
+            { id: 9, term: 'Sorting Mail: Category A', def: 'High-value priority mail items that demand immediate attention and must be processed today.' },
+            { id: 10, term: 'Sorting Mail: Category B', def: 'High-value mail items that allow a longer lead time, typically requiring action within 3 to 4 days.' },
+            { id: 11, term: 'Sorting Mail: Category C', def: 'Less critical incoming documents, with or without deadlines, that may be handled personally or passed to others.' },
+            { id: 12, term: 'Sorting Mail: Category D', def: 'Routine mail items that require no immediate action other than standard filing or internal distribution.' },
+            { id: 13, term: 'Mail Sorting by Action: To-Sign', def: 'Grouping documents requiring official signatures together, such as cheques, time cards, and expense vouchers.' },
+            { id: 14, term: 'Mail Sorting by Action: Reference', def: 'Holding background materials, situational references, and project details pending further discussion.' },
+            { id: 15, term: 'Mail Sorting by Date Folders', def: 'Managing date-sensitive tasks using sequential folders: To-Do Today, This Week, This Month, and Next Month.' },
+            { id: 16, term: 'Personal Organizer Rule', def: 'Adopting a single unified system, customizing headings, and removing unused components regularly.' },
+            { id: 17, term: 'Desk Clearance Strategy', def: 'Starting setup slowly by organizing areas farthest from the main desk, clearing one drawer or shelf at a time.' },
+            { id: 18, term: 'Bookcase Organization', def: 'Reducing volume by recycling, grouping similar items together, and placing bulky documents in labeled binders.' },
+            { id: 19, term: 'Desk Drawer Management', def: 'Limiting all personal belongings strictly to one drawer and keeping only frequently used tools close by.' },
+            { id: 20, term: 'Filing Cabinet Proximity Rule', def: 'Arranging files by frequency of use, placing seldom-used files further away from the primary workstation.' },
+            { id: 21, term: 'Filing Noun/Key Word Rule', def: 'Labeling files using concise nouns or key words while strictly avoiding starting titles with dates or numbers.' },
+            { id: 22, term: 'Office Desk Out Box Rule', def: 'Utilizing an Out Box for outgoing items and clearing its complete contents at least once every day.' },
+            { id: 23, term: 'Project Monitoring Form', def: 'An administrative tool used to systematically track the status and progress of delegated assignments.' },
+            { id: 24, term: 'Vacation Benchmark Question', def: 'Evaluating incoming mail by asking: "What would I decide if this arrived one week before my vacation?"' },
+            { id: 25, term: 'Annual General Meeting Notice', def: 'Dispatching official meeting notices and proxy forms to all stockholders 3 to 4 weeks in advance.' },
+            { id: 26, term: 'Proxy Form Function', def: 'A legal instrument appointing a representative with voting rights for stockholders unable to attend in person.' },
+            { id: 27, term: 'Note-Taker Positioning', def: 'Seating the note-taker directly beside the Chairperson to ensure clear hearing of every discussion detail.' },
+            { id: 28, term: 'Meeting Scheduling Conflict', def: 'A common hassle where key attendees are unavailable, triggering repetitive invitation and revision cycles.' },
+            { id: 29, term: 'Meeting Location Confusion', def: 'Distributing revised meeting notices without clear highlighting, leading participants to wrong venues.' },
+            { id: 30, term: 'Meeting Agenda Purpose', def: 'Serving as an informational roadmap outlining objectives, venue, timeline, topic leaders, and duration.' },
+            { id: 31, term: 'Formal Minutes Structure', def: 'Documenting organizational name, body name, date/time/location, attendance, AOB, and next meeting date.' },
+            { id: 32, term: 'Time of Adjournment', def: 'The official closing time of a meeting recorded precisely in the formal meeting minutes.' },
+            { id: 33, term: 'Inconsistent System Usage Mistake', def: 'Failing to maintain an administrative filing structure after its initial setup.' },
+            { id: 34, term: 'Geographic Filing Method', def: 'Categorizing business records according to cities, regions, counties, or international locations.' },
+            { id: 35, term: 'Numeric Filing Method', def: 'Assigning unique numerical codes to files for indirect indexing and retrieval.' },
+            { id: 36, term: 'Incoming Mail Screening', def: 'Performing an initial review to discard or recycle junk mail immediately upon receipt.' },
+            { id: 37, term: 'E-Mail Management Protocol', def: 'Screening messages, avoiding unnecessary printing, and setting designated daily time slots for replies.' },
+            { id: 38, term: 'Inherited File Rule', def: 'Recognizing that inherited workspace files should be audited and consolidated rather than automatically kept.' },
+            { id: 39, term: 'Miscellaneous Personal File', def: 'Maintaining a dedicated personal folder for miscellaneous references using standard subject headings.' },
+            { id: 40, term: 'Daily Workplace Clearance', def: 'Clearing the desk surface completely at the end of each workday and processing incoming items promptly.' },
+            { id: 41, term: 'Three Key Mail Questions', def: 'Asking: "What does this refer to?", "What is my next step?", and "What if received before vacation?"' },
+            { id: 42, term: 'Scheduling Timing Selection', def: 'Avoiding booking internal meetings during early Monday mornings or late Friday afternoons.' },
+            { id: 43, term: 'Pre-Meeting Preparation Duty', def: 'Reviewing all reports to be presented and marking absentees on the attendance list prior to the meeting.' },
+            { id: 44, term: 'Unfinished Business Section', def: 'A formal agenda/minutes category dedicated to resolving items carried over from prior meetings.' },
+            { id: 45, term: 'Any Other Business (AOB)', def: 'A designated section near the conclusion of a meeting for unlisted, new minor items.' },
+            { id: 46, term: 'Note-Taker Signature', def: 'The formal endorsement added at the bottom of meeting minutes to verify recording accuracy.' },
+            { id: 47, term: 'Mail Sorting by Action: To-Write', def: 'Grouping drafting tasks together, such as proposal first drafts, complaint replies, or exit interviews.' },
+            { id: 48, term: 'Mail Sorting by Action: To-Do Today', def: 'Isolating urgent tasks that must be processed and completed by the end of the current working day.' },
+            { id: 49, term: 'Consolidating Related Files', def: 'Merging thin folders containing similar topic matters into comprehensive, thick subject files.' },
+            { id: 50, term: 'Desk Surface Rule', def: 'Placing immediate work-to-do directly on top of the desk while filing away all completed records.' },
+            { id: 51, term: 'Information Reading Tip', def: 'Deciding immediately whether to file an item, pass it to relevant staff, or dispose of it.' },
+            { id: 52, term: 'Meeting Room Booking Oversight', def: 'Confirming meeting invitations before ensuring that the physical or virtual venue is secured.' },
+            { id: 53, term: 'Unprepared Attendee Issue', def: 'Failing to specify meeting topics in invitations, causing participants to arrive without preparation.' },
+            { id: 54, term: 'Schedule Updating Neglect', def: 'Team members failing to maintain shared digital calendars, leading to missed group meetings.' },
+            { id: 55, term: 'Meeting Confirmation Method', def: 'Transitioning from traditional telephone confirmations to automated e-mail calendar invitations.' },
+            { id: 56, term: 'Annual Meeting Folder Prep', def: 'Assembling all necessary reports into compiled folders and distributing copies to every participant.' },
+            { id: 57, term: 'Immediate Re-labeling Strategy', def: 'Updating file labels promptly whenever project scopes shift to maintain visual clarity.' },
+            { id: 58, term: 'Prompt File Replacement', def: 'Returning reference folders to their designated filing location immediately after use.' },
+            { id: 59, term: 'Concise E-mail Composition', def: 'Drafting brief, direct outgoing e-mail messages to respect recipients\' time and focus.' },
+            { id: 60, term: 'Target Project Goal Setting', def: 'Defining clear organizational targets before commencing a major office filing overhaul.' }
+        ];
+
+        let selectedTerm = null;
+        let selectedDef = null;
+        let currentPairs = [];
+        let matchedCount = 0;
+        const ITEMS_PER_SESSION = 6;
+
+        // Text-to-Speech (Professional US English)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize Assessment Session
+        function initGame() {
+            matchedCount = 0;
+            selectedTerm = null;
+            selectedDef = null;
+            document.getElementById('reward-modal').style.display = 'none';
+
+            // Randomly extract 6 items from the 60-item database
+            const shuffledDb = [...database].sort(() => 0.5 - Math.random());
+            currentPairs = shuffledDb.slice(0, ITEMS_PER_SESSION);
+
+            // Render Terms (Left Column)
+            const termsCol = document.getElementById('terms-column');
+            termsCol.innerHTML = '';
+            currentPairs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card term';
+                card.dataset.type = 'term';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.term);
+                card.innerHTML = `<div class="text">${item.term}</div>`;
+                termsCol.appendChild(card);
+            });
+
+            // Render Definitions (Right Column, Shuffled)
+            const defsCol = document.getElementById('defs-column');
+            defsCol.innerHTML = '';
+            const shuffledDefs = [...currentPairs].sort(() => 0.5 - Math.random());
+            shuffledDefs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.type = 'def';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.def);
+                card.innerHTML = `<div class="text">${item.def}</div>`;
+                defsCol.appendChild(card);
+            });
+
+            speak('New session loaded. Match each filing concept or meeting duty with its definition.');
+        }
+
+        // Card Selection Handler
+        function selectCard(card, soundText) {
+            if (card.classList.contains('matched')) return;
+
+            speak(soundText);
+            const type = card.dataset.type;
+
+            if (type === 'term') {
+                if (selectedTerm) selectedTerm.classList.remove('selected');
+                selectedTerm = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedDef) selectedDef.classList.remove('selected');
+                selectedDef = card;
+                card.classList.add('selected');
+            }
+
+            if (selectedTerm && selectedDef) {
+                checkMatch();
+            }
+        }
+
+        // Match Verification
+        function checkMatch() {
+            const termId = selectedTerm.dataset.id;
+            const defId = selectedDef.dataset.id;
+
+            if (termId === defId) {
+                const t = selectedTerm;
+                const d = selectedDef;
+
+                setTimeout(() => {
+                    t.classList.remove('selected');
+                    d.classList.remove('selected');
+                    t.classList.add('matched');
+                    d.classList.add('matched');
+
+                    speak('Correct.');
+                    matchedCount++;
+
+                    if (matchedCount === ITEMS_PER_SESSION) {
+                        setTimeout(showReward, 800);
+                    }
+                }, 250);
+
+                selectedTerm = null;
+                selectedDef = null;
+            } else {
+                setTimeout(() => {
+                    speak('Incorrect match. Please try again.');
+                    selectedTerm.classList.remove('selected');
+                    selectedDef.classList.remove('selected');
+                    selectedTerm = null;
+                    selectedDef = null;
+                }, 500);
+            }
+        }
+
+        // Display Session Completion Modal
+        function showReward() {
+            document.getElementById('reward-modal').style.display = 'flex';
+            speak('Assessment completed successfully.');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>

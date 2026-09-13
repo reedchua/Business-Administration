@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Functions & Corporate Structures Assessment</title>
+    <style>
+        :root {
+            --primary: #1E293B;
+            --accent: #0284C7;
+            --success: #15803D;
+            --error: #B91C1C;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --border: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            min-height: 75px;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.selected {
+            border-color: var(--accent);
+            background-color: #F0F9FF;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .card.matched {
+            border-color: var(--border);
+            background-color: #F1F5F9;
+            opacity: 0.35;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .card .text {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .card.term .text {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Business Assessment Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .modal h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0F172A;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Business Functions & Corporate Structures Assessment</h1>
+        <p>Match each corporate structure or value chain concept on the left with its corresponding definition on the right.</p>
+    </div>
+
+    <div class="game-container">
+        <div class="column" id="terms-column"></div>
+        <div class="column" id="defs-column"></div>
+    </div>
+
+    <!-- Assessment Completed Modal -->
+    <div class="overlay" id="reward-modal">
+        <div class="modal">
+            <h2>Session Completed</h2>
+            <p>You have successfully verified proficiency in these 6 corporate organization and value chain concepts.</p>
+            <button class="btn" onclick="initGame()">Start Next Session 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // 60 Professional Knowledge Items extracted & expanded from Section 6
+        const database = [
+            { id: 1, term: 'Primary Purpose of Business', def: 'To generate recurring income, increase firm value, and secure organizational financial assets.' },
+            { id: 2, term: 'Secondary Purpose of Business', def: 'To enable employees to earn a good living and improve their overall standard of living.' },
+            { id: 3, term: 'Tertiary Purpose of Business', def: 'To promote social welfare through efficient resource utilization and equitable distribution.' },
+            { id: 4, term: 'Tangible Assets', def: 'Physical assets, such as office space for rent, used by organizations to generate rental income.' },
+            { id: 5, term: 'Intangible Assets', def: 'Non-physical assets, like intellectual property, licensed to generate revenue through license fees.' },
+            { id: 6, term: 'Porter Value Chain Framework', def: 'A generic model illustrating primary and support activities used by firms to build competitive advantage.' },
+            { id: 7, term: 'Inbound Logistics', def: 'A primary activity focused on receiving, storing, and disseminating raw materials into operations.' },
+            { id: 8, term: 'Just-in-Time (JIT) Logistics', def: 'A logistics strategy reducing warehousing expenses and minimizing aging inventory risks.' },
+            { id: 9, term: 'Outbound Logistics', def: 'Primary activities involving collecting, storing, and physically distributing products to buyers.' },
+            { id: 10, term: 'After-Sales Service', def: 'Primary activities enhancing brand equity and reinforcing consumer confidence in product quality.' },
+            { id: 11, term: 'Support Activities', def: 'Value chain functions including firm infrastructure, HR, technology development, and procurement.' },
+            { id: 12, term: 'Human Resource Management', def: 'A support activity integrating personnel practices into operations to create unique human capital.' },
+            { id: 13, term: 'Technology Development', def: 'A support activity building proprietary technical know-how to enhance product quality and efficiency.' },
+            { id: 14, term: 'Procurement', def: 'The purchasing function ensuring uninterrupted supplies of raw materials and machinery at reasonable costs.' },
+            { id: 15, term: 'Sole Proprietorship', def: 'A business owned by one individual, suitable for small-scale, low-risk ventures with unlimited personal liability.' },
+            { id: 16, term: 'Sole Proprietorship Advantage', def: 'Easy setup and termination, full retention of profits, and direct, simplified decision-making.' },
+            { id: 17, term: 'Sole Proprietorship Disadvantage', def: 'Limited capital sources, lack of separate legal entity status, and unlimited personal liability.' },
+            { id: 18, term: 'No Separate Legal Entity', def: 'A legal condition where the owner’s personal assets are not separated from business liabilities.' },
+            { id: 19, term: 'Partnership Ordinance', def: 'Hong Kong statutory law governing co-ownership business structures formed to share profits.' },
+            { id: 20, term: 'General Partnership', def: 'A structure where all partners carry joint unlimited liability for business debts and partner misconduct.' },
+            { id: 21, term: 'General Partnership Advantage', def: 'Easier capital raising than sole proprietors and ability to retain talent by offering partnership paths.' },
+            { id: 22, term: 'General Partnership Disadvantage', def: 'Unlimited personal liability, profit sharing, and mutual liability for co-partners’ wrongful actions.' },
+            { id: 23, term: 'Limited Partnership', def: 'A structure consisting of general partners with operational control and limited partners with limited liability.' },
+            { id: 24, term: 'General Partner Role', def: 'Managing day-to-day operations while bearing unlimited personal liability for firm debts.' },
+            { id: 25, term: 'Limited Partner Role', def: 'Providing capital with liability capped at unpaid shares, but strictly prohibited from management.' },
+            { id: 26, term: 'Limited Partnership Advantage', def: 'Limited liability for non-managing partners and the ability to replace limited partners without dissolution.' },
+            { id: 27, term: 'Private Limited Company', def: 'A corporate structure governed by the Companies Ordinance, suitable for small to medium enterprises.' },
+            { id: 28, term: 'Separate Legal Entity Status', def: 'A corporate trait separating individual owners’ personal property entirely from company obligations.' },
+            { id: 29, term: 'Limited Liability of Shareholders', def: 'Limiting shareholder financial risk strictly to the total amount invested in purchasing shares.' },
+            { id: 30, term: 'Perpetual Succession', def: 'The capability of a limited company to continue operating regardless of shareholder death or bankruptcy.' },
+            { id: 31, term: 'Transfer of Ownership', def: 'Facilitating ownership changes in a limited company through the straightforward buying and selling of shares.' },
+            { id: 32, term: 'Public Disclosure Requirement', def: 'Mandatory filing of capital structure, shareholder details, and director records with the Companies Registry.' },
+            { id: 33, term: 'Public Limited Company', def: 'A corporate entity offering both shares and debentures to the general public, suited for large enterprises.' },
+            { id: 34, term: 'HKEX Listing Rules', def: 'Stringent regulatory standards governing public companies listed on the Hong Kong Stock Exchange.' },
+            { id: 35, term: 'Risk of Takeover', def: 'A public company vulnerability where external investors purchase voting shares to acquire control.' },
+            { id: 36, term: 'Foreign Company Office', def: 'An overseas entity establishing a local branch, subsidiary, or representative office in Hong Kong.' },
+            { id: 37, term: 'Representative Office', def: 'A foreign company setup used strictly for market research, liaison, and non-revenue business exploration.' },
+            { id: 38, term: 'Organization Life Cycle', def: 'The corporate evolution path covering five stages: birth, growth, maturity, decline, and death.' },
+            { id: 39, term: 'Corporate Rejuvenation', def: 'Restructuring or innovating during maturity/decline to prevent organizational death and ensure long-term survival.' },
+            { id: 40, term: 'Firm Infrastructure', def: 'A support activity encompassing general management, planning, legal, accounting, and quality management.' },
+            { id: 41, term: 'Business Operations Function', def: 'Executing business activities designed to generate value from tangible and intangible enterprise assets.' },
+            { id: 42, term: 'Marketing and Sales Activity', def: 'Primary activities inducing buyers to purchase products through pricing, promotion, and channel management.' },
+            { id: 43, term: 'Value Chain Margin', def: 'The difference between the total value generated by activities and the collective cost of performing them.' },
+            { id: 44, term: 'Economic Activities', def: 'Commercial functions including buying, selling, investing, and providing professional services.' },
+            { id: 45, term: 'Licensing Fee Income', def: 'Revenue generated by granting authorization to external organizations to use intellectual properties.' },
+            { id: 46, term: 'Unique Human Capital', def: 'Highly skilled workforce developed through strategic HR management that rivals cannot easily replicate.' },
+            { id: 47, term: 'Proprietary Know-How', def: 'Specialized technical expertise gained through technology development that boosts production efficiency.' },
+            { id: 48, term: 'Sole Proprietor Instability', def: 'The risk of automatic business termination immediately upon the death of the sole owner.' },
+            { id: 49, term: 'Companies Registry', def: 'The Hong Kong government department where incorporation documents and statutory returns are submitted.' },
+            { id: 50, term: 'Complicated Winding Up', def: 'Expensive, formal legal procedures required to liquidate and dissolve a private limited company.' },
+            { id: 51, term: 'Public Capital Access', def: 'The ability of public limited companies to raise large capital sums from the general investing public.' },
+            { id: 52, term: 'External Business Environment', def: 'Outside factors such as financial crises or warfare that impact corporate survival and life cycle.' },
+            { id: 53, term: 'Management Competency', def: 'The capability of leadership to navigate market conditions and drive company growth.' },
+            { id: 54, term: 'Co-Ownership Structure', def: 'A commercial arrangement where two or more partners join together to carry on business.' },
+            { id: 55, term: 'Partner Conflict Risk', def: 'Disagreements between general partners that can jeopardize operational efficiency and stability.' },
+            { id: 56, term: 'Capital Source Limitations', def: 'Constraints faced by sole proprietors relying solely on personal savings or personal loans.' },
+            { id: 57, term: 'Competitive Advantage', def: 'Delivering superior customer value or operating at lower costs compared to industry competitors.' },
+            { id: 58, term: 'Uninterrupted Supply Chain', def: 'Managing procurement effectively to secure essential production inputs without operational pauses.' },
+            { id: 59, term: 'Subsidiary Office', def: 'A separate legal entity incorporated locally but controlled by an overseas parent company.' },
+            { id: 60, term: 'Branch Office', def: 'An extension of a foreign parent company operating locally without a separate legal identity.' }
+        ];
+
+        let selectedTerm = null;
+        let selectedDef = null;
+        let currentPairs = [];
+        let matchedCount = 0;
+        const ITEMS_PER_SESSION = 6;
+
+        // Text-to-Speech (Professional US English)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize Assessment Session
+        function initGame() {
+            matchedCount = 0;
+            selectedTerm = null;
+            selectedDef = null;
+            document.getElementById('reward-modal').style.display = 'none';
+
+            // Randomly extract 6 items from the 60-item database
+            const shuffledDb = [...database].sort(() => 0.5 - Math.random());
+            currentPairs = shuffledDb.slice(0, ITEMS_PER_SESSION);
+
+            // Render Terms (Left Column)
+            const termsCol = document.getElementById('terms-column');
+            termsCol.innerHTML = '';
+            currentPairs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card term';
+                card.dataset.type = 'term';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.term);
+                card.innerHTML = `<div class="text">${item.term}</div>`;
+                termsCol.appendChild(card);
+            });
+
+            // Render Definitions (Right Column, Shuffled)
+            const defsCol = document.getElementById('defs-column');
+            defsCol.innerHTML = '';
+            const shuffledDefs = [...currentPairs].sort(() => 0.5 - Math.random());
+            shuffledDefs.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.type = 'def';
+                card.dataset.id = item.id;
+                card.onclick = () => selectCard(card, item.def);
+                card.innerHTML = `<div class="text">${item.def}</div>`;
+                defsCol.appendChild(card);
+            });
+
+            speak('New session loaded. Match each business concept with its corresponding definition.');
+        }
+
+        // Card Selection Handler
+        function selectCard(card, soundText) {
+            if (card.classList.contains('matched')) return;
+
+            speak(soundText);
+            const type = card.dataset.type;
+
+            if (type === 'term') {
+                if (selectedTerm) selectedTerm.classList.remove('selected');
+                selectedTerm = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedDef) selectedDef.classList.remove('selected');
+                selectedDef = card;
+                card.classList.add('selected');
+            }
+
+            if (selectedTerm && selectedDef) {
+                checkMatch();
+            }
+        }
+
+        // Match Verification
+        function checkMatch() {
+            const termId = selectedTerm.dataset.id;
+            const defId = selectedDef.dataset.id;
+
+            if (termId === defId) {
+                const t = selectedTerm;
+                const d = selectedDef;
+
+                setTimeout(() => {
+                    t.classList.remove('selected');
+                    d.classList.remove('selected');
+                    t.classList.add('matched');
+                    d.classList.add('matched');
+
+                    speak('Correct.');
+                    matchedCount++;
+
+                    if (matchedCount === ITEMS_PER_SESSION) {
+                        setTimeout(showReward, 800);
+                    }
+                }, 250);
+
+                selectedTerm = null;
+                selectedDef = null;
+            } else {
+                setTimeout(() => {
+                    speak('Incorrect match. Please try again.');
+                    selectedTerm.classList.remove('selected');
+                    selectedDef.classList.remove('selected');
+                    selectedTerm = null;
+                    selectedDef = null;
+                }, 500);
+            }
+        }
+
+        // Display Session Completion Modal
+        function showReward() {
+            document.getElementById('reward-modal').style.display = 'flex';
+            speak('Assessment completed successfully.');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
